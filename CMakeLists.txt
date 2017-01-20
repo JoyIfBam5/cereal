@@ -108,6 +108,7 @@ install (FILES ${EXTERNAL_RAPIDXML_HEADERS} DESTINATION include/cereal/external/
 install (FILES ${EXTERNAL_RAPIDXML_MANUAL} DESTINATION include/cereal/external/rapidxml)
 install (FILES ${EXTERNAL_RAPIDXML_LICENSE} DESTINATION include/cereal/external/rapidxml)
 
+find_package(Git)
 if(GIT_FOUND)
     execute_process(COMMAND ${GIT_EXECUTABLE} describe --abbrev=0 --tags
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
