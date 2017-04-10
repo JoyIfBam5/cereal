@@ -3,7 +3,7 @@ project (cereal)
 
 option(ENABLE_BOOST "Search and use boost" ON)
 option(ENABLE_DOXYGEN "Search and use doxygen" ON)
-option(SKIP_PORTABILITY_TEST "Skip portability tests" OFF)
+option(SKIP_PORTABILITY_TEST "Skip portability (32 bit) tests" OFF)
 if(NOT CMAKE_VERSION VERSION_LESS 3.0) # installing cereal requires INTERFACE lib
     option(JUST_INSTALL_CEREAL "Don't do anything besides installing the library" OFF)
 endif()
@@ -16,8 +16,14 @@ else()
     set(CEREAL_THREAD_LIBS "")
 endif()
 
-if(NOT MSVC)
-    set(CMAKE_CXX_FLAGS "-Wall -Werror -g -Wextra -Wshadow -pedantic ${CMAKE_CXX_FLAGS}")
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /W3 /WX")
+else()
+    set(CMAKE_CXX_FLAGS "-Wall -g -Wextra -Wshadow -pedantic -Wold-style-cast ${CMAKE_CXX_FLAGS}")
+    option(WITH_WERROR "Compile with '-Werror' C++ compiler flag" ON)
+    if(WITH_WERROR)
+        set(CMAKE_CXX_FLAGS "-Werror ${CMAKE_CXX_FLAGS}")
+    endif(WITH_WERROR)
     if(CMAKE_VERSION VERSION_LESS 3.1)
         set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
     else()
@@ -48,36 +54,21 @@ endif()
 include_directories(./include)
 
 if(ENABLE_BOOST)
-    find_package(Boost COMPONENTS serialization unit_test_framework)
+    # Boost serialization for performance sandbox
+    find_package(Boost COMPONENTS serialization)
 
     if(Boost_FOUND)
         include_directories(${Boost_INCLUDE_DIRS})
-        enable_testing()
-        add_subdirectory(unittests)
     endif(Boost_FOUND)
 endif(ENABLE_BOOST)
+
+enable_testing()
+add_subdirectory(unittests)
 
 add_subdirectory(sandbox)
 
 if(ENABLE_DOXYGEN)
-    find_package(Doxygen)
-    if(DOXYGEN_FOUND)
-
-        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.in" "${CMAKE_CURRENT_BINARY_DIR}/doxygen.cfg" @ONLY)
-        add_custom_target(doc
-            COMMAND ${DOXYGEN_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/doxygen.cfg"
-            WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-            COMMENT "Generating API documentation with Doxygen" VERBATIM
-            )
-
-        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/scripts/updatedoc.in" "${CMAKE_CURRENT_BINARY_DIR}/updatedoc.sh" @ONLY)
-        add_custom_target(update-doc
-            COMMAND "${CMAKE_CURRENT_BINARY_DIR}/updatedoc.sh"
-            DEPENDS doc
-            COMMENT "Copying documentation to gh-pages branch" VERBATIM
-            )
-
-    endif(DOXYGEN_FOUND)
+    add_subdirectory(doc)
 endif(ENABLE_DOXYGEN)
 
 find_package(Git)
@@ -165,3 +156,4 @@ compact binary encodings, XML, or JSON. cereal was designed to be fast,
 light-weight, and easy to extend - it has no external dependencies and can be
 easily bundled with other code or used standalone.")
 include(CPack)
+
